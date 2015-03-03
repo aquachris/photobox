@@ -5,6 +5,7 @@ The software for a private party photo box, built to run on the following system
 - An equally old(ish) Captiva e1701 flatscreen TFT (1280x1024px)
 - A Canon EOS650 DSLR camera
 - A Logitech C270 USB webcam
+- A Canon SELPHY CP800 photo printer
 
 and using the following software:
 
