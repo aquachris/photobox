@@ -1,0 +1,9 @@
+html, body, div, video {
+	margin: 0;
+	padding: 0;
+}
+
+video {
+	height: 1024px;
+	width: 1280px;
+}
