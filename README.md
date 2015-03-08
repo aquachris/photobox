@@ -3,7 +3,7 @@
 The software for a private party photo box, built to run on the following system setup:
 - An old(ish) Medion E1210 Netbook, running Ubuntu 14.04
 - An equally old(ish) Captiva e1701 flatscreen TFT (1280x1024px)
-- A Canon EOS650 DSLR camera
+- A Canon EOS600 DSLR camera
 - A Logitech C270 USB webcam
 
 and using the following software:

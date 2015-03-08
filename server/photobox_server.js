@@ -1,4 +1,5 @@
 var PHOTOS_PER_PRINT = 4;
+var BASEPATH = '/home/centaur/photobox/server';
 
 var fs = require('fs');
 var http = require('http');
@@ -13,7 +14,7 @@ var takeImage = function() {
   console.log('taking picture');
 
   // assemble command
-  var shellCmd = './capture-image.sh '+(photosTaken+1)+'  >>capture-photo-log.txt 2>&1';
+  var shellCmd = BASEPATH+'/capture-image.sh '+(photosTaken+1)+'  >>capture-photo-log.txt 2>&1';
   // execute command
   child = exec(shellCmd, function(error, stdout, stderr) {
     if(stdout) {
@@ -35,9 +36,28 @@ var takeImage = function() {
   }
 };
 
+var resetImageProcess = function() {
+  console.log('resetting image process');
+  
+  // assemble command
+  var shellCmd = BASEPATH+'/reset-images.sh >>capture-photo-log.txt 2>&1';
+  child = exec(shellCmd, function(error, stdout, stderr) {
+    if(stdout) {
+      sys.print(stdout + "\n");
+    }
+    if(stderr) {
+      sys.print("ERROR: " + stderr + "\n");
+    }
+    if(error !== null) {
+      console.log("EXEC ERROR: " + error + "\n" + shellCmd);
+    }
+  });
+  photosTaken = 0;
+};
+
 var processImages = function() {
   photosTaken = 0; 
-  var shellCmd = './convert-files.sh >>convert-files-log.txt 2>&1';
+  var shellCmd = BASEPATH+'/convert-files.sh >>convert-files-log.txt 2>&1';
 
   // execute the command
   child = exec(shellCmd, function(error, stdout, stderr) {
@@ -62,7 +82,7 @@ var server = http.createServer(function(req, res) {
     res.writeHead(200, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-      'Access-Control-Allow-Methods': 'OPTIONS, POST, GET, PUT'
+      'Access-Control-Allow-Methods': 'OPTIONS, POST, GET, PUT, DELETE'
     });
     res.end('OPTIONS request served');
 
@@ -91,6 +111,11 @@ var server = http.createServer(function(req, res) {
     takeImage();
     res.writeHead(200, {'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*'});
     res.end('PUT request served');
+
+  } else if(req.method == 'DELETE') {
+    resetImageProcess();
+    res.writeHead(200, {'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*'});
+    res.end('DELETE request served');
 
   } else {
     var html = '<html><head></head><body>200: Ok</body></html>';

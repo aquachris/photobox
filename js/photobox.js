@@ -1,12 +1,12 @@
 // CONSTANTS
 // Limit for how many photos may be printed without maintenance
-var PRINT_LIMIT = 1;
+var PRINT_LIMIT = 35;
 // number of pictures for each print
 var PICS_PER_PRINT = 4;
 // Switch DSLR is active yes/no (set to false for simulation)
 var DSLR_ACTIVE = true;
 
-// element handles for container elements
+1// element handles for container elements
 var videoCt, btnIndicatorCt, instructionsCt, instructionsInnerCt;
 // number of pictures taken
 var numPicsTaken = 0;
@@ -79,8 +79,6 @@ var init = function(videoId) {
  * Put camera feed into video element
  */
 var requestCamera = function() {
-	// make camera container visible
-	videoCt.classList.remove('hidden');
 	// request camera
 	var constraints = { video: true };
 	var successCallback = function(localMediaStream) {
@@ -92,6 +90,10 @@ var requestCamera = function() {
 		console.error("getUserMedia error: ", err);
 	};
 	navigator.getUserMedia(constraints, successCallback, errorCallback);
+	// make camera container visible after a short delay
+	setTimeout(function() {
+		videoCt.classList.remove('hidden');
+	}, 4000);
 };
 
 /**
@@ -339,12 +341,12 @@ var showPrintWaitScreen = function() {
 	}, 7000);
 	setTimeout(function() {
 		removeText();
-		addText('Der Ausdruck kommt auf der linken Seite aus der Box.');
-	}, 25000);
+		addText('<p style="color: #a00">ACHTUNG:</p><p>Foto bitte erst nehmen, wenn es sich wirklich nicht mehr bewegt!</p>');
+	}, 30000);
 	setTimeout(function() {
 		removeText();
 		startInstructionLoop();
-	}, 30000);
+	}, 60000);
 };
 
 var startPictureProcess = function(e) {
@@ -352,6 +354,11 @@ var startPictureProcess = function(e) {
 		console.log('starting picture process');
 		stopInstructionLoop();
 		document.body.removeEventListener('click', startPictureProcess);
+		// send a DELETE request to reset the pictures on the server
+		$.ajax({
+			url: 'http://localhost:2000',
+			type: 'DELETE'
+		});
 		numPicsTaken = 0;
 		takeNextPicture();
 	} else if(e) {
@@ -362,12 +369,17 @@ var startPictureProcess = function(e) {
 };
 
 var takeNextPicture = function() {
-	var extraTime = numPicsTaken === 0 ? 2000 : 0;
+	var extraTime = 0;
 	removeText();
 	if(numPicsTaken === 0) {
+		extraTime = 4000;
 		requestCamera();
+		addText('<p>Alles klar, es geht los!</p><p>Bitte recht freundlich!</p>');
 	}
-	addText('<p class="pic">Bild '+(numPicsTaken+1)+'</p>');
+	setTimeout(function() {
+		removeText();
+		addText('<p class="pic">Bild '+(numPicsTaken+1)+'</p>');
+	}, extraTime);
 	setTimeout(function() {
 		removeText();
 	}, 1500+extraTime);
