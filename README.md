@@ -18,3 +18,10 @@ and using the following software:
 Note that the software was built specifically to run on this setup, so no other system configurations have been tested.
 
 While it was not designed to be used by anyone but me, it might still be useful to you if you are trying to build something similar. 
+
+This is what my box looks like:
+<img src="photos/box.jpg" />
+
+And this is an example of what it can produce:
+<img src="photos/example.jpg" />
+
