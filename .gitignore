@@ -1,1 +1,5 @@
 *.jpg
+!example.jpg
+server/*.log
+server/*.txt
+
