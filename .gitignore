@@ -1,5 +1,6 @@
 *.jpg
 !example.jpg
+!box.jpg
 server/*.log
 server/*.txt
 
