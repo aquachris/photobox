@@ -6,7 +6,7 @@ var PICS_PER_PRINT = 4;
 // Switch DSLR is active yes/no (set to false for simulation)
 var DSLR_ACTIVE = true;
 
-1// element handles for container elements
+// element handles for container elements
 var videoCt, btnIndicatorCt, instructionsCt, instructionsInnerCt;
 // number of pictures taken
 var numPicsTaken = 0;
