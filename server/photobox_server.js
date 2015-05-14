@@ -86,7 +86,7 @@ var resetPrinter = function() {
     if(error !== null) {
       console.log("EXEC ERROR: " + error + "\n" + shellCmd);
     }
-  }
+  });
   printerEnabled = true;
 };
 
