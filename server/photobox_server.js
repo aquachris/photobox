@@ -1,3 +1,14 @@
+// This file contains a primitive nodejs web server that reacts to the requests being 
+// sent by the photobox HTML frontend. The web server runs on localhost:<PORT>
+// 
+// The server can currently deal with the following request types (see implementation for details):
+// OPTIONS requests set CORS headers
+// GET requests are used to communicate the printer state
+// PUT requests trigger the DSLR to take a single photo
+// POST requests are used to re-enable the printer
+// DELETE requests reset the current image process
+
+var PORT = 2000;
 var PHOTOS_PER_PRINT = 4;
 var BASEPATH = '/home/centaur/photobox/server';
 
@@ -5,10 +16,34 @@ var fs = require('fs');
 var http = require('http');
 var sys = require('sys');
 var exec = require('child_process').exec;
+var execSync = require('child_process').execSync;
 var child;
 
 var photosTaken = 0;
 var snapshotsTaken = 0;
+var printerEnabled = true;
+
+var queryPrinterStatus = function() {
+  console.log('getting printer status');
+  
+  // assemble command
+  var shellCmd = 'lpstat -p Canon_SELPHY_CP800 | grep enabled';
+  // execute command (synchronously)
+  var ret;
+  try {
+    ret = execSync(shellCmd);
+  } catch(e) {
+    console.log("exception in queryPrinterStatus: "+ e + "\n");
+  }
+  if(!ret) {
+    console.log("queryPrinter negative\n");
+    printerEnabled = false;
+  } else {
+    console.log("queryPrinter positive\n");
+    printerEnabled = true;
+  }
+  return printerEnabled;
+};
 
 var takeImage = function() {
   console.log('taking picture');
@@ -18,10 +53,10 @@ var takeImage = function() {
   // execute command
   child = exec(shellCmd, function(error, stdout, stderr) {
     if(stdout) {
-      sys.print(stdout + "\n");
+      console.log(stdout + "\n");
     }
     if(stderr) {
-      sys.print("ERROR: " + stderr + "\n");
+      console.log("ERROR: " + stderr + "\n");
     }
     if(error !== null) {
       console.log("EXEC ERROR: " + error + "\n" + shellCmd);
@@ -36,6 +71,25 @@ var takeImage = function() {
   }
 };
 
+var resetPrinter = function() {
+  console.log('resetting printer state');
+  
+  // assemble command
+  var shellCmd = BASEPATH+'/reset-printer.sh >>capture-photo-log.txt 2>&1';
+  child = exec(shellCmd, function(error, stdout, stderr) {
+    if(stdout) {
+      console.log(stdout + "\n");
+    }
+    if(stderr) {
+      console.log("ERROR: " + stderr + "\n");
+    }
+    if(error !== null) {
+      console.log("EXEC ERROR: " + error + "\n" + shellCmd);
+    }
+  }
+  printerEnabled = true;
+};
+
 var resetImageProcess = function() {
   console.log('resetting image process');
   
@@ -43,10 +97,10 @@ var resetImageProcess = function() {
   var shellCmd = BASEPATH+'/reset-images.sh >>capture-photo-log.txt 2>&1';
   child = exec(shellCmd, function(error, stdout, stderr) {
     if(stdout) {
-      sys.print(stdout + "\n");
+      console.log(stdout + "\n");
     }
     if(stderr) {
-      sys.print("ERROR: " + stderr + "\n");
+      console.log("ERROR: " + stderr + "\n");
     }
     if(error !== null) {
       console.log("EXEC ERROR: " + error + "\n" + shellCmd);
@@ -62,10 +116,10 @@ var processImages = function() {
   // execute the command
   child = exec(shellCmd, function(error, stdout, stderr) {
     if(stdout) {
-      sys.print(stdout + "\n");
+      console.log(stdout + "\n");
     } 
     if(stderr) {
-      sys.print("ERROR: " + stderr + "\n");
+      console.log("ERROR: " + stderr + "\n");
     }
     if(error !== null) {
       console.log("EXEC ERROR: " + error + "\n" + shellCmd);
@@ -74,10 +128,8 @@ var processImages = function() {
 };
 
 var server = http.createServer(function(req, res) {
-  var regex = /^data:.+\/(.+);base64,(.*)$/;
-  
-  // handle three different request methods:
-  // OPTIONS, POST and GET (GET also serves as catch-all)
+
+  // handle the different request types:
   if(req.method == 'OPTIONS') {
     res.writeHead(200, {
       'Access-Control-Allow-Origin': '*',
@@ -93,16 +145,7 @@ var server = http.createServer(function(req, res) {
       console.log('Partial body');
     });
     req.on('end', function() {
-      snapshotsTaken++;
-      var imgData = JSON.parse(body).imageData;
-      var matches = imgData.match(regex);
-      var ext = matches[1];
-      var data = matches[2];
-      var buffer = new Buffer(data, 'base64');
-      fs.writeFileSync('snapshot_'+snapshotsTaken+'.'+ext, buffer);
-      if(snapshotsTaken >= 4) {
-        processImages();
-      }
+	resetPrinter();
     });
     res.writeHead(200, {'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*'});
     res.end('POST request served');
@@ -118,18 +161,18 @@ var server = http.createServer(function(req, res) {
     res.end('DELETE request served');
 
   } else {
-    var html = '<html><head></head><body>200: Ok</body></html>';
-    res.writeHead(200, {'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*'});
-    res.end('GET request served');
+    console.log(queryPrinterStatus());
+    var text = ''+printerEnabled; // "true" or "false" (String)
+    res.writeHead(200, {'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*'});
+    res.end(text);
   }
 });
 
 // run the server
 try {
-  var port = 2000;
   var host = 'localhost';
-  server.listen(port, host);
-  console.log('Listening at http://'+host+':'+port);
+  server.listen(PORT, host);
+  console.log('Listening at http://'+host+':'+PORT);
 } catch(e) {
   console.log('caught exception');
   console.log(e);

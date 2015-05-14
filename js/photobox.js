@@ -1,12 +1,10 @@
 // CONSTANTS
-// Limit for how many photos may be printed without maintenance
-var PRINT_LIMIT = 35;
 // number of pictures for each print
 var PICS_PER_PRINT = 4;
 // Switch DSLR is active yes/no (set to false for simulation)
 var DSLR_ACTIVE = true;
 
-1// element handles for container elements
+// element handles for container elements
 var videoCt, btnIndicatorCt, instructionsCt, instructionsInnerCt;
 // number of pictures taken
 var numPicsTaken = 0;
@@ -155,81 +153,13 @@ var fakeSnapshot = function() {
 	}, 2000);
 };
 
-/** 
- * Take a still of the video stream
- */ 
-var takeSnapshot = function() {
-	console.log('taking snapshot');
-	
-	// suspend click listener
-	video.removeEventListener('click', takeSnapshot);
-	// pause video
-	video.pause();
-	
-	// do an animation ("white out") to show that something is happening
-	var brightness = 1;
-	var saturate = 1;
-	var incrementing = true;
-	var interval = setInterval(function() {
-		if(incrementing) {
-			brightness += 1;
-		} else {
-			brightness -= 1;
-		}
-		if(brightness >= 6) {
-			incrementing = false;
-		} 
-		if(brightness <= 1) {
-			brightness = 1;
-			incrementing = true;
-			clearInterval(interval);
-		}
-		saturate = (5 - (brightness-1)) * 0.2;
-		video.style['filter'] = 'brightness('+brightness+') saturate('+saturate+')';
-		video.style['-webkit-filter'] = 'brightness('+brightness+') saturate('+saturate+')';
-	}, 20);
-	
-	setTimeout(function() {
-		// create and add snapshot element 
-		var snapshot = document.createElement('canvas');
-		snapshot.width = 300; //video.videoWidth;
-		snapshot.height = 200; //video.videoHeight;
-		snapshot.classList.add('snapshot');
-		snapshot.getContext('2d').drawImage(video, 0, 0, 300, 200);
-		snapshotCt.appendChild(snapshot);
-		
-		// send image to server
-		postSnapshot(snapshot);
-
-		// increment snapshot counter
-		snapshotsTaken++;
-		if(snapshotsTaken >= 4) {
-			while(snapshotCt.firstChild) {
-				snapshotCt.removeChild(snapshotCt.firstChild);
-			}
-			snapshotsTaken = 0;
-		}
-		
-		// re-add click listener
-		video.addEventListener('click', takeSnapshot);
-		// restart video
-		video.play();
-	}, 500);
-};
-
-var postSnapshot = function(canvas) {
-	// get base64 encoded png
-	var imgData = canvas.toDataURL('img/jpg');
-	// remove descriptor from beginning (TODO: necessary?)
-	//imgData = imgData.replace('data:image/png;base64,', '');
-	// JSON-encode
-	var postData = JSON.stringify({imageData: imgData});
-	// send post request
+/**
+ * Send a POST request to re-enable the printer
+ */
+var triggerPrinterReset = function() {
 	$.ajax({
 		url: 'http://localhost:2000',
 		type: 'POST',
-		data: postData,
-		contentType: 'application/json'
 	});
 };
 
@@ -292,12 +222,7 @@ var stopInstructionLoop = function() {
 };
 
 var startInstructionLoop = function() {
-	if(numPrints >= PRINT_LIMIT) {
-		console.log('maintenance required');
-		showMaintenanceMessage();
-		return;
-	}
-	console.log("starting instruction loop");
+	console.log('starting instruction loop, ' + numPrints + ' prints done');
 	showNextInstructionScreen();
 	showBtnIndicator();
 	document.body.addEventListener('click', startPictureProcess);
@@ -321,6 +246,7 @@ var showMaintenanceMessage = function() {
 var onMaintenanceMouseClick = function(e) {
 	// middle mouse button resets printed pages and reinits
 	if(e.button === 1) {
+		triggerPrinterReset();
 		document.body.removeEventListener('click', onMaintenanceMouseClick);
 		console.log('print status reset');
 		numPrints = 0;
@@ -337,16 +263,33 @@ var showPrintWaitScreen = function() {
 	}, 2000);
 	setTimeout(function() {
 		removeText();
-		addText('<p>Druckt ...</p><p class="loading"></p>');
+		addText('<p>Collage wird zusammengebaut ...</p>');
 	}, 7000);
 	setTimeout(function() {
 		removeText();
-		addText('<p style="color: #a00">ACHTUNG:</p><p>Foto bitte erst nehmen, wenn es sich wirklich nicht mehr bewegt!</p>');
-	}, 30000);
+		addText('<p>Druckt ...</p><p class="loading"></p>');
+	}, 10000);
 	setTimeout(function() {
-		removeText();
-		startInstructionLoop();
-	}, 60000);
+		// check if printer has been disabled
+		$.ajax({
+			url: 'http://localhost:2000',
+			type: 'GET',
+			success : function(data, textStatus, jqXHR) {
+				console.log('GET call returned, data: ', data);
+				removeText();
+				if(data == 'true') {
+					addText('<p style="color: #a00">ACHTUNG:</p><p>Foto bitte erst nehmen, wenn es sich wirklich nicht mehr bewegt!</p>');
+					setTimeout(function() {
+						removeText();
+						startInstructionLoop();
+					}, 30000);
+				} else {
+					// printer is disabled
+					showMaintenanceMessage();
+				}
+			}
+		});
+	}, 30000);
 };
 
 var startPictureProcess = function(e) {
@@ -408,7 +351,7 @@ var takeNextPicture = function() {
 			stopCamera();
 			showPrintWaitScreen();
 		}
-	}, 8000+extraTime);
+	}, 10000+extraTime);
 };
 
 /**
