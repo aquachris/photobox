@@ -263,12 +263,12 @@ var showPrintWaitScreen = function() {
 	}, 2000);
 	setTimeout(function() {
 		removeText();
-		addText('<p>Collage wird zusammengebaut ...</p>');
+		addText('<p>Collage wird zusammengebaut ...</p><p class="loading"></p>');
 	}, 7000);
 	setTimeout(function() {
 		removeText();
 		addText('<p>Druckt ...</p><p class="loading"></p>');
-	}, 10000);
+	}, 14000);
 	setTimeout(function() {
 		// check if printer has been disabled
 		$.ajax({

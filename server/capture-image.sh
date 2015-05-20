@@ -10,5 +10,5 @@ BASEDIR=/home/centaur/photobox
 PHOTODIR=$BASEDIR/photos
 
 gphoto2 --capture-image-and-download --force-overwrite --filename=$PHOTODIR/capt$1.jpg
-convert $PHOTODIR/capt$1.jpg -resize 600x400 $PHOTODIR/capt${1}_sm.jpg
+convert $PHOTODIR/capt$1.jpg -resize 650x433 $PHOTODIR/capt${1}_sm.jpg
 

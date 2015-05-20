@@ -161,7 +161,7 @@ var server = http.createServer(function(req, res) {
     res.end('DELETE request served');
 
   } else {
-    console.log(queryPrinterStatus());
+    queryPrinterStatus();
     var text = ''+printerEnabled; // "true" or "false" (String)
     res.writeHead(200, {'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*'});
     res.end(text);

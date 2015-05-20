@@ -23,12 +23,15 @@ do
 done
 
 # pipe all the montage commands together for performance reasons
-montage $PHOTODIR/capt[1-4]_sm.jpg -tile 2x2 -border 5 -bordercolor '#fff' -geometry +20+20 -background transparent miff:- | \
-montage - -tile 1x1 -geometry +0+40 -background transparent miff:- | \
-convert - -crop 1280x980+20+0 +repage miff:- | \
-montage $PHOTODIR/banner.png - $PHOTODIR/empty.png -mode Concatenate -tile x1 -texture $PHOTODIR/symphony2.png $PHOTODIR/montage.jpg
+montage $PHOTODIR/capt[1-4]_sm.jpg -tile 2x2 -border 5 -bordercolor '#fff' -geometry +5+5 -background transparent miff:- | \
+montage - -tile 1x1 -geometry +0+37 -background transparent miff:- | \
+montage $PHOTODIR/banner.png $PHOTODIR/space_5.png - $PHOTODIR/space_20.png -mode Concatenate -tile x1 -background '#78316e' $PHOTODIR/montage.jpg
 # print the montage
-lp -d Canon_SELPHY_CP800 $PHOTODIR/montage.jpg
+if [ -f $SERVERDIR/print.true  ]
+then
+	lp -d Canon_SELPHY_CP800 $PHOTODIR/montage.jpg
+fi
+#lp -d Canon_SELPHY_CP800 $PHOTODIR/montage.jpg
 # call the cleanup / archiving script
 $SERVERDIR/cleanup.sh
 
