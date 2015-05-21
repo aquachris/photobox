@@ -3,4 +3,5 @@
 !box.jpg
 server/*.log
 server/*.txt
+tests/*
 

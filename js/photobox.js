@@ -3,9 +3,13 @@
 var PICS_PER_PRINT = 4;
 // Switch DSLR is active yes/no (set to false for simulation)
 var DSLR_ACTIVE = true;
+// Printing enable / disable switch
+var PRINTING_ENABLED = true;
 
 // element handles for container elements
-var videoCt, btnIndicatorCt, instructionsCt, instructionsInnerCt;
+var videoCt, btnIndicatorCt, instructionsCt, instructionsInnerCt, backgroundCt;
+// middle mouse button held down
+var middleMouseBtnPressed = false;
 // number of pictures taken
 var numPicsTaken = 0;
 // number of prints since last maintenance
@@ -48,6 +52,8 @@ var init = function(videoId) {
 	}
 	
 	// get container element handles
+	backgroundCt = document.getElementById('background-ct');
+
 	videoCt = document.getElementById('video-ct');
 	videoCt.classList.add('hidden');
 
@@ -164,6 +170,25 @@ var triggerPrinterReset = function() {
 };
 
 /**
+ * Send a POST request with param op = 'off'
+ */
+var triggerPrinterOff = function() {
+	$.ajax({
+		url: 'http://localhost:2000',
+		type: 'POST',
+		data: {
+			'op': 'off'
+		},
+		success: function() {
+			PRINTING_ENABLED = false;
+			removeText();
+			addText('<p>Drucker aus</p>');
+			setTimeout(startInstructionLoop, 2000);
+		}
+	});
+};
+
+/**
  * Send a PUT request to trigger a photo being taken by the DSLR
  */ 
 var triggerPhoto = function() {
@@ -240,13 +265,35 @@ var showMaintenanceMessage = function() {
 	removeText();
 	hideBtnIndicator();
 	addText('<p class="maintenance">Drucker muss neu befüllt werden.</p>');
+	document.body.addEventListener('mousedown', onMaintenanceMouseDown);
+	document.body.addEventListener('mouseup', onMaintenanceMouseUp);
 	document.body.addEventListener('click', onMaintenanceMouseClick);
+};
+
+var onMaintenanceMouseDown = function(e) {
+	if(e.button === 1) {
+		middleMouseBtnPressed = true;
+	} else if(e.button === 0 && middleMouseBtnPressed) {
+		document.body.removeEventListener('mousedown', onMaintenanceMouseDown);
+		document.body.removeEventListener('mouseup', onMaintenanceMouseUp);
+		document.body.removeEventListener('click', onMaintenanceMouseClick);
+		triggerPrinterOff();
+	}
+	
+};
+
+var onMaintenanceMouseUp = function(e) {
+	if(e.button === 1) {
+		middleMouseBtnPressed = false;
+	}
 };
 
 var onMaintenanceMouseClick = function(e) {
 	// middle mouse button resets printed pages and reinits
 	if(e.button === 1) {
 		triggerPrinterReset();
+		document.body.removeEventListener('mousedown', onMaintenanceMouseDown);
+		document.body.removeEventListener('mouseup', onMaintenanceMouseUp);
 		document.body.removeEventListener('click', onMaintenanceMouseClick);
 		console.log('print status reset');
 		numPrints = 0;
@@ -258,6 +305,7 @@ var onMaintenanceMouseClick = function(e) {
 var showPrintWaitScreen = function() {
 	numPrints++;
 	removeText();
+	backgroundCt.classList.remove('photos');
 	setTimeout(function() {
 		addText('<p>Schon vorbei!</p>', 'font-size: 2em;');
 	}, 2000);
@@ -265,37 +313,49 @@ var showPrintWaitScreen = function() {
 		removeText();
 		addText('<p>Collage wird zusammengebaut ...</p><p class="loading"></p>');
 	}, 7000);
-	setTimeout(function() {
-		removeText();
-		addText('<p>Druckt ...</p><p class="loading"></p>');
-	}, 14000);
-	setTimeout(function() {
-		// check if printer has been disabled
-		$.ajax({
-			url: 'http://localhost:2000',
-			type: 'GET',
-			success : function(data, textStatus, jqXHR) {
-				console.log('GET call returned, data: ', data);
-				removeText();
-				if(data == 'true') {
-					addText('<p style="color: #a00">ACHTUNG:</p><p>Foto bitte erst nehmen, wenn es sich wirklich nicht mehr bewegt!</p>');
-					setTimeout(function() {
-						removeText();
-						startInstructionLoop();
-					}, 30000);
-				} else {
-					// printer is disabled
-					showMaintenanceMessage();
+	if(!PRINTING_ENABLED) {
+		setTimeout(function() {
+			removeText();
+			addText('<p>Bild wurde gespeichert.</p>');
+		}, 12000);
+		setTimeout(function() {
+			removeText();
+			startInstructionLoop();
+		}, 16000);
+	} else {
+		setTimeout(function() {
+			removeText();
+			addText('<p>Druckt ...</p><p class="loading"></p>');
+		}, 14000);
+		setTimeout(function() {
+			// check if printer has been disabled
+			$.ajax({
+				url: 'http://localhost:2000',
+				type: 'GET',
+				success : function(data, textStatus, jqXHR) {
+					console.log('GET call returned, data: ', data);
+					removeText();
+					if(data == 'true') {
+						addText('<p style="color: #a00">ACHTUNG:</p><p>Foto bitte erst nehmen, wenn es sich wirklich nicht mehr bewegt!</p>');
+						setTimeout(function() {
+							removeText();
+							startInstructionLoop();
+						}, 30000);
+					} else {
+						// printer is disabled
+						showMaintenanceMessage();
+					}
 				}
-			}
-		});
-	}, 30000);
+			});
+		}, 30000);
+	}
 };
 
 var startPictureProcess = function(e) {
 	if(e && e.button === 0) {
 		console.log('starting picture process');
 		stopInstructionLoop();
+		backgroundCt.classList.add('photos');
 		document.body.removeEventListener('click', startPictureProcess);
 		// send a DELETE request to reset the pictures on the server
 		$.ajax({

@@ -5,7 +5,7 @@
 // OPTIONS requests set CORS headers
 // GET requests are used to communicate the printer state
 // PUT requests trigger the DSLR to take a single photo
-// POST requests are used to re-enable the printer
+// POST requests are used to enable, disable and re-enable the printer
 // DELETE requests reset the current image process
 
 var PORT = 2000;
@@ -21,7 +21,7 @@ var child;
 
 var photosTaken = 0;
 var snapshotsTaken = 0;
-var printerEnabled = true;
+var printerOk = true;
 
 var queryPrinterStatus = function() {
   console.log('getting printer status');
@@ -37,12 +37,12 @@ var queryPrinterStatus = function() {
   }
   if(!ret) {
     console.log("queryPrinter negative\n");
-    printerEnabled = false;
+    printerOk = false;
   } else {
     console.log("queryPrinter positive\n");
-    printerEnabled = true;
+    printerOk = true;
   }
-  return printerEnabled;
+  return printerOk;
 };
 
 var takeImage = function() {
@@ -73,7 +73,7 @@ var takeImage = function() {
 
 var resetPrinter = function() {
   console.log('resetting printer state');
-  
+
   // assemble command
   var shellCmd = BASEPATH+'/reset-printer.sh >>capture-photo-log.txt 2>&1';
   child = exec(shellCmd, function(error, stdout, stderr) {
@@ -87,7 +87,45 @@ var resetPrinter = function() {
       console.log("EXEC ERROR: " + error + "\n" + shellCmd);
     }
   });
-  printerEnabled = true;
+  printerOk = true;
+};
+
+var turnPrintingOff = function() {
+  console.log('turning printer OFF');
+
+  // assemble command
+  var shellCmd = BASEPATH+'/turn-printing-off.sh >>printer-log.txt 2>&1';
+  child = exec(shellCmd, function(error, stdout, stderr) {
+    if(stdout) {
+      console.log(stdout + "\n");
+    }
+    if(stderr) {
+      console.log("ERROR: " + stderr + "\n");
+    }
+    if(error !== null) {
+      console.log("EXEC ERROR: " + error + "\n" + shellCmd);
+    }
+  });
+  printerOk = true;
+};
+
+var turnPrintingOn = function() {
+  console.log('turning printer ON');
+
+  // assemble command
+  var shellCmd = BASEPATH+'/turn-printing-on.sh >>printer-log.txt 2>&1';
+  child = exec(shellCmd, function(error, stdout, stderr) {
+    if(stdout) {
+      console.log(stdout + "\n");
+    }
+    if(stderr) {
+      console.log("ERROR: " + stderr + "\n");
+    }
+    if(error !== null) {
+      console.log("EXEC ERROR: " + error + "\n" + shellCmd);
+    }
+  });
+  printerOk = true;
 };
 
 var resetImageProcess = function() {
@@ -142,10 +180,15 @@ var server = http.createServer(function(req, res) {
     var body = '';
     req.on('data', function(data) {
       body += data;
-      console.log('Partial body');
     });
     req.on('end', function() {
-	resetPrinter();
+	if(body.indexOf('op=off') >= 0) {
+		turnPrintingOff();
+	} else if(body.indexOf('op=on') >= 0) {
+		turnPrintingOn();
+	} else {
+		resetPrinter();
+	}
     });
     res.writeHead(200, {'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*'});
     res.end('POST request served');
@@ -162,7 +205,7 @@ var server = http.createServer(function(req, res) {
 
   } else {
     queryPrinterStatus();
-    var text = ''+printerEnabled; // "true" or "false" (String)
+    var text = ''+printerOk; // "true" or "false" (String)
     res.writeHead(200, {'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*'});
     res.end(text);
   }

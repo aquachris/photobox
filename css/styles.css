@@ -29,9 +29,15 @@ body, div, p {
 	z-index: 1;
 }
 div.background {
-	background: url('../img/symphony.png');
-	-webkit-filter: brightness(0.6) contrast(5);
-	filter: brightness(0.6) contrast(5);;
+	background: url('../img/fuchs_otter_weiss.png');
+	background-size: 15% 15%;
+	background-repeat: no-repeat;
+	background-color: #78316e;
+	background-position: 95% 4%;
+	-webkit-transition: background-position 2s ease-in-out;
+	transition: background-position 2s ease-in-out;
+	/*-webkit-filter: brightness(0.6) contrast(5);
+	filter: brightness(0.6) contrast(5);*/
 	height: 1024px;
 	left: 0;
 	position: absolute;
@@ -39,9 +45,12 @@ div.background {
 	width: 1280px;
 	z-index: 0;
 }
+div.background.photos {
+	background-position: 50% 4%;
+}
 div.btn-indicator {
 	bottom: 55px;
-	color: #a00;
+	color: #aa0;
 	display: inline-block;
 	font-size: 4em;
 	font-weight: bold;
@@ -59,7 +68,8 @@ div.btn-indicator span.arrow {
 }
 div.instructions {
 	align-items: center;
-	color: #555;
+	/*color: #555;*/
+	color: #ccc;
 	display: flex;
 	font-size: 7em;
 	height: 100%;
@@ -83,7 +93,7 @@ div.instructions p.list {
 	width: 840px;
 }
 div.instructions p.pic {
-	color: #a00;
+	color: #aa0;
 	font-size: 3em;
 	font-weight: bold;
 }
@@ -99,7 +109,7 @@ div.instructions p.loading {
 }
 div.instructions p.loading:before,
 div.instructions p.loading:after {
-	background-color: #a00;
+	background-color: #aa0;
 	border: none;
 	border-radius: 50%;
 	content: '';
@@ -132,7 +142,7 @@ div.instructions p.loading:after {
 	}
 }
 div.instructions p.maintenance {
-	color: #a00;
+	color: #aa0;
 	font-size: 1.2em;
 	margin: 1em 0 0 0;
 	position: relative;

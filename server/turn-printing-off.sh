@@ -10,4 +10,4 @@ SERVERDIR=$BASEDIR/server
 cancel -a
 
 # deactivate printing
-rm $SERVERDIR/print.true
+rm -f $SERVERDIR/print.true
